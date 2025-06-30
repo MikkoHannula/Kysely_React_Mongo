@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/express-session": "^1.18.2"
+  }
+}
