@@ -42,9 +42,8 @@ export default function App() {
     if (showLogin) {
       return <LoginPage onLogin={handleLogin} />;
     }
-    return (
-      <LandingPage />
-    );
+    // Show landing page with quiz flow
+    return <LandingPage showLogin={() => setShowLogin(true)} />;
   }
 
   return (
