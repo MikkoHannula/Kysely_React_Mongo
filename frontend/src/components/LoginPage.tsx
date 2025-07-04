@@ -12,17 +12,27 @@ export default function LoginPage({ onLogin }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-      credentials: "include",
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
+      });
+    } catch (err) {
+      setError("Palvelimeen ei saada yhteyttä");
+      return;
+    }
     if (res.ok) {
       const user = await res.json();
       onLogin(user);
     } else {
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      }
       setError(data.message || "Kirjautuminen epäonnistui");
     }
   };

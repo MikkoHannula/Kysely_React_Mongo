@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Category from '../models/Category';
 import Question from '../models/Question';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
@@ -68,6 +69,17 @@ const mockQuestions: Record<string, { question: string; options: string[]; corre
 async function main() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kysely');
   console.log('Connected to MongoDB');
+
+  // Create admin user 'Pasi' with password 'Kysely'
+  const User = (await import('../models/User')).default;
+  const existing = await User.findOne({ username: 'Pasi' });
+  if (!existing) {
+    const hash = await bcrypt.hash('Kysely', 10);
+    await User.create({ username: 'Pasi', password: hash, role: 'admin' });
+    console.log('Admin user "Pasi" created');
+  } else {
+    console.log('Admin user "Pasi" already exists');
+  }
 
   // Insert categories and map old id to new _id
   const catIdMap: Record<number, any> = {};

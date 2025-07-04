@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function UsersTab() {
   return (
     <div id="users" className="tab-content">

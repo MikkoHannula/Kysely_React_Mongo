@@ -1,5 +1,3 @@
-import React from "react";
-
 interface AdminHeaderProps {
   teacherName: string;
   activeTab: string;

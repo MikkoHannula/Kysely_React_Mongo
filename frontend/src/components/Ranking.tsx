@@ -15,16 +15,15 @@ interface Result {
   date: string;
 }
 
-type SortType = "score" | "date";
+interface RankingProps {
+  onBack: () => void;
+}
 
-export default function ResultsTab() {
+export default function Ranking({ onBack }: RankingProps) {
   const [results, setResults] = useState<Result[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortType, setSortType] = useState<SortType>("date");
-  const [expanded, setExpanded] = useState<{ [catId: string]: boolean }>({
-    all: true,
-  });
+  const [sortType, setSortType] = useState<'score' | 'date'>('score');
 
   useEffect(() => {
     setLoading(true);
@@ -39,6 +38,11 @@ export default function ResultsTab() {
       .finally(() => setLoading(false));
   }, []);
 
+  const getCategoryName = (catId: string) => {
+    const cat = categories.find((c) => c._id === catId);
+    return cat ? cat.name : "-";
+  };
+
   const sortResults = (arr: Result[]) => {
     if (sortType === "score") {
       return [...arr].sort((a, b) => b.scoreValue - a.scoreValue);
@@ -49,44 +53,15 @@ export default function ResultsTab() {
     }
   };
 
-  const handleSort = (type: SortType) => setSortType(type);
-  const toggleAccordion = (catId: string) =>
-    setExpanded((e) => ({ ...e, [catId]: !e[catId] }));
+  if (loading) return <div>Ladataan tuloksia...</div>;
 
-  const getCategoryName = (catId: string) => {
-    const cat = categories.find((c) => c._id === catId);
-    return cat ? cat.name : "-";
-  };
-
-  if (loading) return <div>Ladataan...</div>;
-
-  // Group results by category
-  const resultsByCategory: { [catId: string]: Result[] } = {};
-  results.forEach((r) => {
-    const catId = typeof r.category === "string" ? r.category : r.category._id;
-    if (!resultsByCategory[catId]) resultsByCategory[catId] = [];
-    resultsByCategory[catId].push(r);
-  });
-
-  // Show all results as a ranking table
   return (
-    <div className="results-tab">
-      <h2>Tulokset / Ranking</h2>
+    <div className="ranking-view">
+      <h2>Ranking / Tulokset</h2>
       <div style={{ marginBottom: 16 }}>
-        <button
-          className={
-            sortType === "score" ? "btn-primary" : "btn-secondary"
-          }
-          onClick={() => handleSort("score")}
-        >
-          Järjestä pisteiden mukaan
-        </button>
-        <button
-          className={sortType === "date" ? "btn-primary" : "btn-secondary"}
-          onClick={() => handleSort("date")}
-        >
-          Järjestä ajan mukaan
-        </button>
+        <button className={sortType === "score" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("score")}>Järjestä pisteiden mukaan</button>
+        <button className={sortType === "date" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("date")}>Järjestä ajan mukaan</button>
+        <button className="btn-secondary" style={{ float: 'right' }} onClick={onBack}>Takaisin</button>
       </div>
       <table className="results-table">
         <thead>
@@ -101,11 +76,7 @@ export default function ResultsTab() {
           {sortResults(results).map((r) => (
             <tr key={r._id}>
               <td>{r.name}</td>
-              <td>
-                {typeof r.category === "string"
-                  ? getCategoryName(r.category)
-                  : (r.category as Category).name}
-              </td>
+              <td>{typeof r.category === "string" ? getCategoryName(r.category) : (r.category as Category).name}</td>
               <td>{r.score}</td>
               <td>{new Date(r.date).toLocaleString("fi-FI")}</td>
             </tr>
