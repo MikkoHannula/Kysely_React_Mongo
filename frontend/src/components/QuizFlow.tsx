@@ -45,13 +45,26 @@ export default function QuizFlow({ name, category, count, onFinish }: QuizFlowPr
       if (current + 1 < questions.length) {
         setCurrent(c => c + 1);
       } else {
-        // Calculate score
-        let score = 0;
-        for (let i = 0; i < questions.length; i++) {
-          const correctIdx = (questions[i] as any).correctAnswer;
-          if (questions[i].options[correctIdx] === newAnswers[i]) score++;
-        }
-        onFinish({ score, total: questions.length, answers: newAnswers, questions });
+        // Fetch correct answers for these questions from backend
+        fetch("/api/questions", { method: "GET" })
+          .then(res => res.json())
+          .then((allQuestions) => {
+            // Map questionId to correctAnswer index
+            const correctMap = new Map();
+            for (const q of allQuestions) {
+              correctMap.set(q._id, q.correctAnswer);
+            }
+            let score = 0;
+            for (let i = 0; i < questions.length; i++) {
+              const correctIdx = correctMap.get(questions[i]._id);
+              if (typeof correctIdx === 'number' && questions[i].options[correctIdx] === newAnswers[i]) score++;
+            }
+            onFinish({ score, total: questions.length, answers: newAnswers, questions });
+          })
+          .catch(() => {
+            // fallback: no score
+            onFinish({ score: 0, total: questions.length, answers: newAnswers, questions });
+          });
       }
       return newAnswers;
     });

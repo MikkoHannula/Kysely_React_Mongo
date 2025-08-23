@@ -157,7 +157,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 });
 
 app.post('/api/logout', async (req: Request, res: Response) => {
-  req.session.destroy((err) => {
+  req.session.destroy((err: any) => {
     if (err) {
       res.status(500).json({ message: 'Logout error', error: err });
       return;
@@ -295,7 +295,14 @@ app.post('/api/quiz', async (req: Request, res: Response) => {
       return;
     }
     // Get all questions for the category
-    const questions = await Question.find({ category: new Types.ObjectId(category) });
+    let categoryId;
+    try {
+      categoryId = new Types.ObjectId(category);
+    } catch (e) {
+      res.status(400).json({ message: 'Invalid category ID' });
+      return;
+    }
+    const questions = await Question.find({ category: categoryId });
     if (questions.length === 0) {
       res.status(404).json({ message: 'No questions found for this category' });
       return;

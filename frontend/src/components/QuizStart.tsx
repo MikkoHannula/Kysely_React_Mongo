@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface QuizStartProps {
   onStart: (data: { name: string; category: string; count: number }) => void;
@@ -7,8 +7,15 @@ interface QuizStartProps {
 
 export default function QuizStart({ onStart, categories }: QuizStartProps) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState(categories[0]?._id || "");
+  const [category, setCategory] = useState("");
   const [count, setCount] = useState(5);
+
+  // Ensure category is set when categories are loaded or change
+  useEffect(() => {
+    if (categories.length > 0 && !category) {
+      setCategory(categories[0]._id);
+    }
+  }, [categories, category]);
 
   return (
     <form className="quiz-start-form" onSubmit={e => { e.preventDefault(); onStart({ name, category, count }); }}>
