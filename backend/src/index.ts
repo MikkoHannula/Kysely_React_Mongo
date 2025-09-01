@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import session from 'express-session';
 import cors from 'cors';
@@ -22,10 +22,20 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kysely')
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default port
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // same-origin or curl
+    if (/^http:\/\/localhost:517\d$/.test(origin) || origin === 'http://localhost:3000' || origin === 'http://localhost:5174') {
+      return cb(null, true);
+    }
+    cb(new Error('Not allowed by CORS: ' + origin));
+  },
   credentials: true
 }));
 app.use(express.json());
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+  next();
+});
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
@@ -38,8 +48,70 @@ app.get('/', (req, res) => {
   res.send('Kysely backend running!');
 });
 
+// Favicon (avoid noisy 404 in console when browser requests /favicon.ico)
+app.get('/favicon.ico', (_req, res) => {
+  res.status(204).end();
+});
+
+// --- Login Route ---
+app.post('/api/login', (async (req: express.Request, res: express.Response) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid username or password' });
+  }
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    return res.status(401).json({ message: 'Invalid username or password' });
+  }
+  req.session.userId = (user._id as any).toString();
+  res.json({ username: user.username, role: user.role });
+}) as any);
+
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kysely')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Middleware
+// Allow Vite dev server on common fallback ports (5173 default, may increment) during development.
+// In production, replace with explicit allowed origins.
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // same-origin or curl
+    if (/^http:\/\/localhost:517\d$/.test(origin) || origin === 'http://localhost:3000' || origin === 'http://localhost:5174') {
+      return cb(null, true);
+    }
+    cb(new Error('Not allowed by CORS: ' + origin));
+  },
+  credentials: true
+}));
+app.use(express.json());
+// Basic request logger (development)
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+  next();
+});
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 2 }
+}));
+
+// --- Example route ---
+app.get('/', (req, res) => {
+  res.send('Kysely backend running!');
+});
+
+// Favicon (avoid noisy 404 in console when browser requests /favicon.ico)
+app.get('/favicon.ico', (_req, res) => {
+  // You can replace this with res.sendFile(...) if you add an actual icon file.
+  res.status(204).end();
+});
+
 // --- Category Routes ---
-app.get('/api/categories', async (req: Request, res: Response) => {
+app.get('/api/categories', async (req: express.Request, res: express.Response) => {
   try {
     const categories = await Category.find();
     res.json(categories);
@@ -48,7 +120,28 @@ app.get('/api/categories', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/categories', async (req: Request, res: Response) => {
+// Get single category by ID
+app.get('/api/categories/:id', async (req: express.Request, res: express.Response) => {
+  try {
+    console.log('[GET /api/categories/:id] id =', req.params.id, 'type =', typeof req.params.id);
+    // Print all available category IDs for debugging
+    const allCats = await Category.find({}, '_id name');
+    console.log('[GET /api/categories/:id] All category IDs:', (allCats as any[]).map(c => c._id.toString()));
+    const cat = await Category.findById(req.params.id);
+    if (!cat) {
+      console.log('[GET /api/categories/:id] not found');
+      res.status(404).json({ message: 'Category not found', triedId: req.params.id, availableIds: (allCats as any[]).map(c => c._id.toString()) });
+      return;
+    }
+    console.log('[GET /api/categories/:id] found', (cat as any)._id.toString());
+    res.json(cat);
+  } catch (err) {
+    console.error('[GET /api/categories/:id] error', err);
+    res.status(500).json({ message: 'Error fetching category', error: err });
+  }
+});
+
+app.post('/api/categories', async (req: express.Request, res: express.Response) => {
   try {
     const { name } = req.body;
     const category = new Category({ name });
@@ -59,7 +152,7 @@ app.post('/api/categories', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/categories/:id', async (req: Request, res: Response) => {
+app.put('/api/categories/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { name } = req.body;
     const category = await Category.findByIdAndUpdate(req.params.id, { name }, { new: true });
@@ -69,7 +162,7 @@ app.put('/api/categories/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/categories/:id', async (req: Request, res: Response) => {
+app.delete('/api/categories/:id', async (req: express.Request, res: express.Response) => {
   try {
     await Category.findByIdAndDelete(req.params.id);
     await Question.deleteMany({ category: req.params.id });
@@ -80,16 +173,45 @@ app.delete('/api/categories/:id', async (req: Request, res: Response) => {
 });
 
 // --- Question Routes ---
-app.get('/api/questions', async (req: Request, res: Response) => {
+app.get('/api/questions', async (req: express.Request, res: express.Response) => {
   try {
-    const questions = await Question.find().populate('category');
+    const { category, count } = req.query as { category?: string; count?: string };
+    let query: any = {};
+    console.log('[QUESTIONS] Query params:', req.query);
+    if (category) {
+      try {
+        query.category = new Types.ObjectId(category);
+      } catch {
+        console.log('[QUESTIONS] Invalid category id:', category);
+        res.status(400).json({ message: 'Invalid category id' });
+        return;
+      }
+    }
+    console.log('[QUESTIONS] Mongo query:', query);
+    let questions = await Question.find(query).populate('category');
+    console.log('[QUESTIONS] Found', questions.length, 'questions');
+    if (questions.length === 0) {
+      res.json([]);
+      return;
+    }
+    // Shuffle if count specified and smaller than total
+    if (count) {
+      const n = Math.max(1, Math.min(parseInt(count, 10) || questions.length, questions.length));
+      // Fisher-Yates partial shuffle
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+      questions = questions.slice(0, n);
+    }
     res.json(questions);
   } catch (err) {
+    console.error('[QUESTIONS] Error:', err);
     res.status(500).json({ message: 'Error fetching questions', error: err });
   }
 });
 
-app.get('/api/questions/:categoryId', async (req: Request, res: Response) => {
+app.get('/api/questions/:categoryId', async (req: express.Request, res: express.Response) => {
   try {
     const categoryId = req.params.categoryId;
     const questions = await Question.find({ category: new Types.ObjectId(categoryId) });
@@ -99,7 +221,7 @@ app.get('/api/questions/:categoryId', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/questions', async (req: Request, res: Response) => {
+app.post('/api/questions', async (req: express.Request, res: express.Response) => {
   try {
     const { category, question, options, correctAnswer } = req.body;
     const q = new Question({ category, question, options, correctAnswer });
@@ -110,7 +232,7 @@ app.post('/api/questions', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/questions/:id', async (req: Request, res: Response) => {
+app.put('/api/questions/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { category, question, options, correctAnswer } = req.body;
     const q = await Question.findByIdAndUpdate(
@@ -124,7 +246,7 @@ app.put('/api/questions/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/questions/:id', async (req: Request, res: Response) => {
+app.delete('/api/questions/:id', async (req: express.Request, res: express.Response) => {
   try {
     await Question.findByIdAndDelete(req.params.id);
     res.status(204).end();
@@ -134,39 +256,44 @@ app.delete('/api/questions/:id', async (req: Request, res: Response) => {
 });
 
 // --- User Routes (with session-based auth) ---
-app.post('/api/login', async (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) {
-      res.status(401).json({ message: 'Käyttäjää ei löydy' });
+app.get('/api/questions', (req: express.Request, res: express.Response) => {
+  const { category, count } = req.query as { category?: string; count?: string };
+  const query: any = {};
+  if (category) {
+    try {
+      query.category = new Types.ObjectId(category);
+    } catch {
+      res.status(400).json({ message: 'Invalid category id' });
       return;
     }
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      res.status(401).json({ message: 'Väärä salasana' });
-      return;
-    }
-    req.session.userId = String(user._id);
-    req.session.role = user.role;
-    res.json({ id: user._id, username: user.username, role: user.role });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Login error', error: err instanceof Error ? err.message : err });
   }
+  console.log('[GET /api/questions] query=', query, 'count=', count);
+  Question.find(query).populate('category')
+    .then((all) => {
+      if (!all || all.length === 0) {
+        console.log('[GET /api/questions] no questions found for query');
+        res.json([]);
+        return;
+      }
+      let questions = all;
+      if (count) {
+        const n = Math.max(1, Math.min(parseInt(count, 10) || questions.length, questions.length));
+        for (let i = questions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [questions[i], questions[j]] = [questions[j], questions[i]];
+        }
+        questions = questions.slice(0, n);
+      }
+      console.log('[GET /api/questions] returning', questions.length, 'questions');
+      res.json(questions);
+    })
+    .catch(err => {
+      console.error('[GET /api/questions] error', err);
+      res.status(500).json({ message: 'Error fetching questions', error: err });
+    });
 });
 
-app.post('/api/logout', async (req: Request, res: Response) => {
-  req.session.destroy((err: any) => {
-    if (err) {
-      res.status(500).json({ message: 'Logout error', error: err });
-      return;
-    }
-    res.status(204).end();
-  });
-});
-
-app.get('/api/me', async (req: Request, res: Response) => {
+app.get('/api/me', async (req: express.Request, res: express.Response) => {
   try {
     if (!req.session.userId) {
       res.status(401).json({ message: 'Ei kirjautunut' });
@@ -183,7 +310,7 @@ app.get('/api/me', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/users', async (req: Request, res: Response) => {
+app.get('/api/users', async (req: express.Request, res: express.Response) => {
   try {
     if (req.session.role !== 'admin') {
       res.status(403).json({ message: 'Ei oikeuksia' });
@@ -196,7 +323,7 @@ app.get('/api/users', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/users', async (req: Request, res: Response) => {
+app.post('/api/users', async (req: express.Request, res: express.Response) => {
   try {
     if (req.session.role !== 'admin') {
       res.status(403).json({ message: 'Ei oikeuksia' });
@@ -212,7 +339,7 @@ app.post('/api/users', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/users/:id', async (req: Request, res: Response) => {
+app.put('/api/users/:id', async (req: express.Request, res: express.Response) => {
   try {
     if (req.session.role !== 'admin') {
       res.status(403).json({ message: 'Ei oikeuksia' });
@@ -228,7 +355,7 @@ app.put('/api/users/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/users/:id', async (req: Request, res: Response) => {
+app.delete('/api/users/:id', async (req: express.Request, res: express.Response) => {
   try {
     if (req.session.role !== 'admin') {
       res.status(403).json({ message: 'Ei oikeuksia' });
@@ -242,7 +369,7 @@ app.delete('/api/users/:id', async (req: Request, res: Response) => {
 });
 
 // --- Results Routes ---
-app.get('/api/results', async (req: Request, res: Response) => {
+app.get('/api/results', async (req: express.Request, res: express.Response) => {
   try {
     const results = await Result.find().populate('category');
     res.json(results);
@@ -251,7 +378,8 @@ app.get('/api/results', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/results', async (req: Request, res: Response) => {
+app.post('/api/results', async (req: express.Request, res: express.Response) => {
+  console.log('Received result POST payload:', req.body);
   try {
     const { name, category, score, scoreValue, total, date } = req.body;
     const result = new Result({ name, category, score, scoreValue, total, date });
@@ -262,7 +390,7 @@ app.post('/api/results', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/results/:id', async (req: Request, res: Response) => {
+app.put('/api/results/:id', async (req: express.Request, res: express.Response) => {
   try {
     const { name, category, score, scoreValue, total, date } = req.body;
     const result = await Result.findByIdAndUpdate(
@@ -276,7 +404,7 @@ app.put('/api/results/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/results/:id', async (req: Request, res: Response) => {
+app.delete('/api/results/:id', async (req: express.Request, res: express.Response) => {
   try {
     await Result.findByIdAndDelete(req.params.id);
     res.status(204).end();
@@ -287,7 +415,7 @@ app.delete('/api/results/:id', async (req: Request, res: Response) => {
 
 // --- Quiz Flow Endpoint ---
 // Get random questions for quiz (by category, count)
-app.post('/api/quiz', async (req: Request, res: Response) => {
+app.post('/api/quiz', async (req: express.Request, res: express.Response) => {
   try {
     const { category, count } = req.body;
     if (!category || !count) {
@@ -310,12 +438,13 @@ app.post('/api/quiz', async (req: Request, res: Response) => {
     // Shuffle and pick random questions
     const shuffled = questions.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, Math.min(count, questions.length));
-    // Remove correctAnswer from response for quiz security
+    // Include correctAnswer index so frontend can check answers
     const quizQuestions = selected.map(q => ({
       _id: q._id,
       question: q.question,
       options: q.options,
-      category: q.category
+      category: q.category,
+      correctAnswer: q.correctAnswer
     }));
     res.json(quizQuestions);
   } catch (err) {

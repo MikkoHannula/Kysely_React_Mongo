@@ -23,7 +23,7 @@ export default function Ranking({ onBack }: RankingProps) {
   const [results, setResults] = useState<Result[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortType, setSortType] = useState<'score' | 'date'>('score');
+  const [sortType, setSortType] = useState<'score' | 'date' | 'category'>('score');
 
   useEffect(() => {
     setLoading(true);
@@ -46,11 +46,18 @@ export default function Ranking({ onBack }: RankingProps) {
   const sortResults = (arr: Result[]) => {
     if (sortType === "score") {
       return [...arr].sort((a, b) => b.scoreValue - a.scoreValue);
-    } else {
+    } else if (sortType === "date") {
       return [...arr].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
+    } else if (sortType === "category") {
+      return [...arr].sort((a, b) => {
+        const catA = typeof a.category === "string" ? getCategoryName(a.category) : (a.category as Category)?.name || "";
+        const catB = typeof b.category === "string" ? getCategoryName(b.category) : (b.category as Category)?.name || "";
+        return catA.localeCompare(catB);
+      });
     }
+    return arr;
   };
 
   if (loading) return <div>Ladataan tuloksia...</div>;
@@ -61,6 +68,7 @@ export default function Ranking({ onBack }: RankingProps) {
       <div style={{ marginBottom: 16 }}>
         <button className={sortType === "score" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("score")}>Järjestä pisteiden mukaan</button>
         <button className={sortType === "date" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("date")}>Järjestä ajan mukaan</button>
+        <button className={sortType === "category" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("category")}>Järjestä kategorian mukaan</button>
         <button className="btn-secondary" style={{ float: 'right' }} onClick={onBack}>Takaisin</button>
       </div>
       <table className="results-table">
@@ -76,7 +84,7 @@ export default function Ranking({ onBack }: RankingProps) {
           {sortResults(results).map((r) => (
             <tr key={r._id}>
               <td>{r.name}</td>
-              <td>{typeof r.category === "string" ? getCategoryName(r.category) : (r.category as Category).name}</td>
+              <td>{typeof r.category === "string" ? getCategoryName(r.category) : (r.category && (r.category as Category).name) || "-"}</td>
               <td>{r.score}</td>
               <td>{new Date(r.date).toLocaleString("fi-FI")}</td>
             </tr>

@@ -1,84 +1,142 @@
-import { useEffect, useState } from "react";
 
-interface QuizQuestion {
+import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
+
+interface Question {
   _id: string;
-  question: string;
+  text: string;
   options: string[];
+  correctAnswer: number;
   category: string;
+}
+
+interface Category {
+  _id: string;
+  name: string;
 }
 
 interface QuizFlowProps {
-  name: string;
-  category: string;
-  count: number;
-  onFinish: (result: { score: number; total: number; answers: string[]; questions: QuizQuestion[] }) => void;
+  questions: Question[];
+  category: Category;
+  onFinish: (score: number, answers: number[]) => void;
+  user: any;
 }
 
-export default function QuizFlow({ name, category, count, onFinish }: QuizFlowProps) {
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+const QuizFlow: React.FC<QuizFlowProps> = ({ questions, category, onFinish, user }) => {
+  // State hooks
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [pendingAnswer, setPendingAnswer] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
+  const [score, setScore] = useState(0);
+  const [resultPosted, setResultPosted] = useState(false);
+  const isPosting = useRef(false);
 
+  // Reset state when questions or category changes
   useEffect(() => {
-    fetch("/api/quiz", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category, count })
-    })
-      .then(res => res.ok ? res.json() : Promise.reject("Kysymyksiä ei löytynyt"))
-      .then(setQuestions)
-      .catch(() => setError("Kysymyksiä ei löytynyt"))
-      .finally(() => setLoading(false));
-  }, [category, count]);
+    setCurrent(0);
+    setAnswers([]);
+    setPendingAnswer(null);
+    setFinished(false);
+    setScore(0);
+    setResultPosted(false);
+    isPosting.current = false;
+  }, [questions, category]);
 
-  if (loading) return <div>Ladataan kysymyksiä...</div>;
-  if (error) return <div>{error}</div>;
-  if (!questions.length) return <div>Ei kysymyksiä.</div>;
-
-  const q = questions[current];
-
-  const handleAnswer = (answer: string) => {
-    setAnswers(a => {
-      const newAnswers = [...a, answer];
-      if (current + 1 < questions.length) {
-        setCurrent(c => c + 1);
+  // Handle answer selection
+  const handleAnswer = (answerIdx: number) => {
+    if (finished || pendingAnswer !== null) return;
+    setPendingAnswer(answerIdx);
+    setTimeout(() => {
+      setAnswers((prev) => [...prev, answerIdx]);
+      setPendingAnswer(null);
+      if (current < questions.length - 1) {
+        setCurrent((prev) => prev + 1);
       } else {
-        // Fetch correct answers for these questions from backend
-        fetch("/api/questions", { method: "GET" })
-          .then(res => res.json())
-          .then((allQuestions) => {
-            // Map questionId to correctAnswer index
-            const correctMap = new Map();
-            for (const q of allQuestions) {
-              correctMap.set(q._id, q.correctAnswer);
-            }
-            let score = 0;
-            for (let i = 0; i < questions.length; i++) {
-              const correctIdx = correctMap.get(questions[i]._id);
-              if (typeof correctIdx === 'number' && questions[i].options[correctIdx] === newAnswers[i]) score++;
-            }
-            onFinish({ score, total: questions.length, answers: newAnswers, questions });
-          })
-          .catch(() => {
-            // fallback: no score
-            onFinish({ score: 0, total: questions.length, answers: newAnswers, questions });
-          });
+        setFinished(true);
       }
-      return newAnswers;
-    });
+    }, 300);
   };
+
+  // Post result and call onFinish when quiz is finished
+  useEffect(() => {
+    if (finished && !resultPosted && !isPosting.current) {
+      isPosting.current = true;
+      // Calculate score
+      const correct = questions.reduce(
+        (acc, q, idx) => acc + (answers[idx] === q.correctAnswer ? 1 : 0),
+        0
+      );
+      setScore(correct);
+      // Prepare result fields to match backend
+      const resultPayload = {
+        name: user?.name || user?.username || "Anonymous",
+        category: category._id,
+        score: `${correct} / ${questions.length}`,
+        scoreValue: correct,
+        total: questions.length,
+        date: new Date().toISOString(),
+      };
+      console.log("Posting result payload:", resultPayload);
+      axios
+        .post("/api/results", resultPayload)
+        .then(() => {
+          setResultPosted(true);
+          onFinish(correct, answers);
+        })
+        .catch(() => {
+          setResultPosted(true);
+          onFinish(correct, answers);
+        });
+    }
+    // eslint-disable-next-line
+  }, [finished, resultPosted, answers, questions, category, user, onFinish]);
+
+  // Guard: no questions
+  if (!questions || questions.length === 0) {
+    return <div>No questions available for this category.</div>;
+  }
+
+  // Quiz finished view
+  if (finished) {
+    return (
+      <div className="quiz-finished">
+        <h2>Quiz Finished!</h2>
+        <p>
+          Your score: {score} / {questions.length}
+        </p>
+      </div>
+    );
+  }
+
+  // Current question
+  const q = questions[current];
 
   return (
     <div className="quiz-flow">
-      <h2>Kysymys {current + 1} / {questions.length}</h2>
-      <div className="quiz-question">{q.question}</div>
-      <div className="quiz-options">
-        {q.options.map(opt => (
-          <button key={opt} className="btn-option" onClick={() => handleAnswer(opt)}>{opt}</button>
+      <h2>
+        Question {current + 1} / {questions.length}
+      </h2>
+      <div className="question-text">{q.text}</div>
+      <div className="options">
+        {q.options.map((opt, idx) => (
+          <button
+            key={idx}
+            className={
+              "option-btn" +
+              (pendingAnswer === idx ? " pending" : "") +
+              (answers[current] === idx ? " selected" : "")
+            }
+            onClick={() => handleAnswer(idx)}
+            disabled={pendingAnswer !== null || finished}
+          >
+            {opt}
+          </button>
         ))}
       </div>
     </div>
   );
-}
+};
+
+
+

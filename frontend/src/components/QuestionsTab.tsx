@@ -20,26 +20,40 @@ const emptyQuestion = {
   correctAnswer: 0,
 };
 
-export default function QuestionsTab() {
+interface QuestionsTabProps {
+  active?: boolean;
+}
+
+export default function QuestionsTab({ active }: QuestionsTabProps) {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<any>(emptyQuestion);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+
+  // Always reload categories and questions when tab is activated
   useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then(setCategories);
-    fetch("/api/questions")
-      .then((res) => res.json())
-      .then(setQuestions)
-      .finally(() => setLoading(false));
-  }, []);
+    if (active) {
+      setLoading(true);
+      fetch("/api/categories")
+        .then((res) => res.json())
+        .then(setCategories);
+      fetch("/api/questions")
+        .then((res) => res.json())
+        .then(setQuestions)
+        .finally(() => setLoading(false));
+    }
+  }, [active]);
 
   const reload = () => {
     setLoading(true);
+    // Reload both categories and questions
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then(setCategories);
     fetch("/api/questions")
       .then((res) => res.json())
       .then(setQuestions)
@@ -112,7 +126,7 @@ export default function QuestionsTab() {
   });
 
   return (
-    <div id="questions" className="tab-content active">
+    <div id="questions" className={"tab-content" + (active ? " active" : "") }>
       <button id="addQuestionBtn" className="btn-primary" onClick={handleAdd}>
         Lisää uusi kysymys
       </button>
@@ -188,49 +202,54 @@ export default function QuestionsTab() {
         </div>
       )}
       <div className="question-list" id="questionList">
-        {categories.map((cat) => (
-          <div className="category-section" key={cat._id}>
-            <div className="category-header">
-              <div className="header-content">
-                <span className="folder-icon">📁</span>
-                <h2>{cat.name}</h2>
-                <span className="question-count">
-                  ({(questionsByCategory[cat._id] || []).length} kysymystä)
-                </span>
-              </div>
-            </div>
-            <div className="questions-grid" id={`category-${cat._id}`}>
-              {(questionsByCategory[cat._id] || []).map((q) => (
-                <div className="question-item" key={q._id}>
-                  <h3>{q.question}</h3>
-                  <div className="options">
-                    {q.options.map((option, optIdx) => (
-                      <div
-                        className={
-                          "option" + (optIdx === q.correctAnswer ? " correct" : "")
-                        }
-                        key={optIdx}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="question-actions">
-                    <button className="btn-secondary" onClick={() => handleEdit(q)}>
-                      Muokkaa
-                    </button>
-                    <button
-                      className="btn-danger"
-                      onClick={() => handleDelete(q._id)}
-                    >
-                      Poista
-                    </button>
-                  </div>
+        {categories.map((cat) => {
+          const isOpen = openCategory === cat._id;
+          return (
+            <div className="category-section" key={cat._id}>
+              <div className="category-header" style={{ cursor: 'pointer' }} onClick={() => setOpenCategory(isOpen ? null : cat._id)}>
+                <div className="header-content">
+                  <span className="folder-icon">{isOpen ? '📂' : '📁'}</span>
+                  <h2>{cat.name}</h2>
+                  <span className="question-count">
+                    ({(questionsByCategory[cat._id] || []).length} kysymystä)
+                  </span>
                 </div>
-              ))}
+              </div>
+              {isOpen && (
+                <div className="questions-grid" id={`category-${cat._id}`}>
+                  {(questionsByCategory[cat._id] || []).map((q) => (
+                    <div className="question-item" key={q._id}>
+                      <h3>{q.question}</h3>
+                      <div className="options">
+                        {q.options.map((option, optIdx) => (
+                          <div
+                            className={
+                              "option" + (optIdx === q.correctAnswer ? " correct" : "")
+                            }
+                            key={optIdx}
+                          >
+                            {option}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="question-actions">
+                        <button className="btn-secondary" onClick={() => handleEdit(q)}>
+                          Muokkaa
+                        </button>
+                        <button
+                          className="btn-danger"
+                          onClick={() => handleDelete(q._id)}
+                        >
+                          Poista
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

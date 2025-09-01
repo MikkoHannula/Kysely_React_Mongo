@@ -7,7 +7,11 @@ interface Category {
 
 const emptyCategory = { name: "" };
 
-export default function CategoriesTab() {
+interface CategoriesTabProps {
+  active?: boolean;
+}
+
+export default function CategoriesTab({ active }: CategoriesTabProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -20,7 +24,7 @@ export default function CategoriesTab() {
 
   const reload = () => {
     setLoading(true);
-    fetch("/api/categories")
+    fetch("/api/categories", { credentials: "include" })
       .then((res) => res.json())
       .then(setCategories)
       .finally(() => setLoading(false));
@@ -45,7 +49,7 @@ export default function CategoriesTab() {
       )
     )
       return;
-    await fetch(`/api/categories/${id}`, { method: "DELETE" });
+  await fetch(`/api/categories/${id}`, { method: "DELETE", credentials: "include" });
     reload();
   };
 
@@ -60,12 +64,14 @@ export default function CategoriesTab() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
+        credentials: "include"
       });
     } else {
       await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
+        credentials: "include"
       });
     }
     setShowForm(false);
@@ -75,7 +81,7 @@ export default function CategoriesTab() {
   if (loading) return <div>Ladataan...</div>;
 
   return (
-    <div id="categories" className="tab-content">
+    <div id="categories" className={"tab-content" + (active ? " active" : "") }>
       <button id="addCategoryBtn" className="btn-primary" onClick={handleAdd}>
         Lisää uusi kategoria
       </button>

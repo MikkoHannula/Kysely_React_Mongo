@@ -17,7 +17,11 @@ interface Result {
 
 type SortType = "score" | "date";
 
-export default function ResultsTab() {
+interface ResultsTabProps {
+  active?: boolean;
+}
+
+export default function ResultsTab({ active }: ResultsTabProps) {
   const [results, setResults] = useState<Result[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +57,9 @@ export default function ResultsTab() {
   const toggleAccordion = (catId: string) =>
     setExpanded((e) => ({ ...e, [catId]: !e[catId] }));
 
-  const getCategoryName = (catId: string) => {
-    const cat = categories.find((c) => c._id === catId);
+  const getCategoryName = (catId: string | undefined | null) => {
+    if (!catId) return "-";
+    const cat = categories.find((c) => c && c._id === catId);
     return cat ? cat.name : "-";
   };
 
@@ -63,14 +68,17 @@ export default function ResultsTab() {
   // Group results by category
   const resultsByCategory: { [catId: string]: Result[] } = {};
   results.forEach((r) => {
-    const catId = typeof r.category === "string" ? r.category : r.category._id;
+    if (!r || !r.category) return;
+    const catId = typeof r.category === "string" ? r.category : (r.category && r.category._id);
+    if (!catId) return;
     if (!resultsByCategory[catId]) resultsByCategory[catId] = [];
     resultsByCategory[catId].push(r);
   });
 
   // Show all results as a ranking table
   return (
-    <div className="results-tab">
+    <div id="results" className={"tab-content" + (active ? " active" : "") }>
+      <div className="results-tab">
       <h2>Tulokset / Ranking</h2>
       <div style={{ marginBottom: 16 }}>
         <button
@@ -104,7 +112,7 @@ export default function ResultsTab() {
               <td>
                 {typeof r.category === "string"
                   ? getCategoryName(r.category)
-                  : (r.category as Category).name}
+                  : (r.category && (r.category as Category).name) || "-"}
               </td>
               <td>{r.score}</td>
               <td>{new Date(r.date).toLocaleString("fi-FI")}</td>
@@ -112,6 +120,7 @@ export default function ResultsTab() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

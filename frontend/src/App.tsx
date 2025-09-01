@@ -1,32 +1,82 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import AdminHeader from "./components/AdminHeader";
 import QuestionsTab from "./components/QuestionsTab";
 import CategoriesTab from "./components/CategoriesTab";
-import UsersTab from "./components/UsersTab";
 import ResultsTab from "./components/ResultsTab";
 import LandingPage from "./components/LandingPage";
 import LoginPage from "./components/LoginPage";
-import QuizFlow from "./components/QuizFlow";
+import QuizFlow from "./components/QuizFlow2";
+import Ranking from "./components/Ranking";
 import "./App.css";
 
-export default function App() {
+function AppInner() {
   const [activeTab, setActiveTab] = useState("questions");
   const [user, setUser] = useState<{ username: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fatalError, setFatalError] = useState<string | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   // Quiz state for landing page (move outside render)
   const [quizStartData, setQuizStartData] = useState<null | { name: string; category: string; count: number }>(null);
   const [quizResult, setQuizResult] = useState<null | { score: number; total: number; answers: string[]; questions: any[] }>(null);
+  // Ranking view toggle must be declared unconditionally to keep hook order stable
+  const [showRanking, setShowRanking] = useState(false);
+  // Quiz question fetching related hooks MUST be before any early returns
+  const [quizQuestions, setQuizQuestions] = useState<any[] | null>(null);
+  const [quizCategoryObj, setQuizCategoryObj] = useState<any | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
 
   useEffect(() => {
+    let didTimeout = false;
+    const timeout = setTimeout(() => {
+      didTimeout = true;
+      setFatalError('Sovellus ei latautunut ajoissa. (App did not load in time)');
+      setLoading(false);
+    }, 5000);
     fetch("/api/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setUser(data);
-        setLoading(false);
+        if (!didTimeout) {
+          if (data) setUser(data);
+          setLoading(false);
+          clearTimeout(timeout);
+        }
       })
-      .catch(() => setLoading(false));
+      .catch((e) => {
+        if (!didTimeout) {
+          setFatalError('Virhe ladattaessa käyttäjätietoja: ' + (e?.message || e));
+          setLoading(false);
+          clearTimeout(timeout);
+        }
+      });
+    return () => clearTimeout(timeout);
   }, []);
+
+  // Fetch quiz questions and category object when quizStartData changes
+  useEffect(() => {
+    if (quizStartData) {
+      setQuizLoading(true);
+      setQuizQuestions(null);
+      setQuizCategoryObj(null);
+      Promise.all([
+        fetch(`/api/questions?category=${quizStartData.category}&count=${quizStartData.count}`).then(r => r.json()),
+        fetch(`/api/categories/${quizStartData.category}`).then(r => r.json())
+      ]).then(([questions, categoryObj]) => {
+        setQuizQuestions(questions);
+        setQuizCategoryObj(categoryObj);
+        setQuizLoading(false);
+      }).catch(() => {
+        setQuizQuestions([]);
+  // Fallback placeholder so UI can still advance instead of infinite loading
+  setQuizCategoryObj({ _id: quizStartData.category, name: 'Tuntematon kategoria' });
+        setQuizLoading(false);
+      });
+    } else {
+      setQuizQuestions(null);
+      setQuizCategoryObj(null);
+      setQuizLoading(false);
+    }
+  }, [quizStartData]);
 
   const handleTabChange = (tab: string) => setActiveTab(tab);
   const handleLogout = async () => {
@@ -40,41 +90,40 @@ export default function App() {
     setShowLogin(false);
   };
 
+  if (fatalError) return <div style={{ color: 'red', padding: 24 }}>{fatalError}</div>;
   if (loading) return <div>Ladataan...</div>;
 
   if (!user) {
-    if (showLogin) {
-      return <LoginPage onLogin={handleLogin} />;
-    }
-    if (quizStartData) {
+    // Not logged in branch (public / quiz flow)
+    if (showLogin) return <LoginPage onLogin={handleLogin} />;
+
+    // Quiz taking view
+    if (quizStartData && !quizResult) {
+      if (quizLoading || !quizQuestions || !quizCategoryObj) {
+        return <div className="quiz-container">Ladataan kysymyksiä...</div>;
+      }
       return (
         <div className="quiz-container">
-          <button className="btn-secondary" style={{ float: 'right' }} onClick={() => setQuizStartData(null)}>Takaisin</button>
-          <QuizFlow {...quizStartData} onFinish={setQuizResult} />
+          <QuizFlow
+            questions={quizQuestions}
+            category={quizCategoryObj}
+            user={{ name: quizStartData.name }}
+            onFinish={(score: number, answers: number[]) => setQuizResult({
+              score,
+              total: quizQuestions.length,
+              answers: answers.map((ansIdx, i) =>
+                typeof quizQuestions[i]?.options[ansIdx] === 'string' ? quizQuestions[i].options[ansIdx] : String(ansIdx)
+              ),
+              questions: quizQuestions
+            })}
+          />
         </div>
       );
     }
+
+    // Result / ranking views
     if (quizResult) {
-      // Save result to backend
-      React.useEffect(() => {
-        if (!quizResult || !quizStartData) return;
-        fetch("/api/results", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: quizStartData && (quizStartData as any).name,
-            category: quizStartData && (quizStartData as any).category,
-            score: `${quizResult.score} / ${quizResult.total}`,
-            scoreValue: quizResult.score,
-            total: quizResult.total,
-            date: new Date().toISOString()
-          })
-        });
-      }, [quizResult, quizStartData]);
-      // Result view with ranking button
-      const [showRanking, setShowRanking] = React.useState(false);
       if (showRanking) {
-        const Ranking = require("./components/Ranking").default;
         return <Ranking onBack={() => setShowRanking(false)} />;
       }
       return (
@@ -83,9 +132,12 @@ export default function App() {
           <div>Oikeat vastaukset: {quizResult.score} / {quizResult.total}</div>
           <button className="btn-primary" onClick={() => { setQuizResult(null); setQuizStartData(null); }}>Uusi peli</button>
           <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={() => setShowRanking(true)}>Näytä ranking</button>
+          <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={() => { setQuizResult(null); setQuizStartData(null); }}>Takaisin</button>
         </div>
       );
     }
+
+    // Landing page (start quiz or login)
     return <LandingPage showLogin={() => setShowLogin(true)} onQuizStart={setQuizStartData} />;
   }
 
@@ -98,11 +150,18 @@ export default function App() {
           onTabChange={handleTabChange}
           onLogout={handleLogout}
         />
-        {activeTab === "questions" && <QuestionsTab />}
-        {activeTab === "categories" && <CategoriesTab />}
-        {activeTab === "users" && <UsersTab />}
-        {activeTab === "results" && <ResultsTab />}
+  <QuestionsTab active={activeTab === "questions"} />
+  <CategoriesTab active={activeTab === "categories"} />
+  <ResultsTab active={activeTab === "results"} />
       </div>
     </main>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppInner />
+    </ErrorBoundary>
   );
 }

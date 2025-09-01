@@ -8,7 +8,6 @@ interface AdminHeaderProps {
 const tabs = [
   { key: "questions", label: "Kysymykset" },
   { key: "categories", label: "Kategoriat" },
-  { key: "users", label: "Käyttäjät" },
   { key: "results", label: "Tulokset" },
 ];
 
