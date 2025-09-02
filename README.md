@@ -1,3 +1,12 @@
+## Seeding the Database
+
+To quickly set up example categories and questions, run the seed script:
+
+```
+npx ts-node backend/scripts/seed_database.ts
+```
+
+This will populate your MongoDB database with sample data so you can see how the app works immediately.
 # Kysely React + MongoDB Project
 
 This project is a modernized version of the Taitaja25_Naytto quiz/admin app, rebuilt with:

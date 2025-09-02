@@ -206,7 +206,7 @@ app.get('/api/questions', async (req: express.Request, res: express.Response) =>
 app.get('/api/questions/:categoryId', async (req: express.Request, res: express.Response) => {
   try {
     const categoryId = req.params.categoryId;
-    const questions = await Question.find({ category: new Types.ObjectId(categoryId) });
+  const questions = await Question.find({ category: new Types.ObjectId(categoryId) }) as Array<{ category: string }>;
     res.json(questions);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching questions by category', error: err });

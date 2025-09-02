@@ -121,7 +121,10 @@ function AppInner() {
       return (
         <div className="quiz-container">
           <QuizFlow
-            questions={quizQuestions}
+            questions={quizQuestions.map(q => ({
+              ...q,
+              category: typeof q.category === 'string' ? q.category : q.category.name
+            }))}
             category={quizCategoryObj}
             user={{ name: quizStartData.name }}
             onFinish={(score: number, answers: number[]) => setQuizResult({

@@ -111,7 +111,7 @@ async function main() {
       continue;
     }
     const question = new Question({
-      category: catDoc._id,
+  category: (catDoc as { _id: string })._id,
       question: q.question,
       options: q.options,
       correctAnswer: q.correctAnswer,
