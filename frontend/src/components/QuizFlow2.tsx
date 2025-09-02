@@ -19,7 +19,7 @@ interface QuizFlowProps {
   questions: Question[];
   category: Category;
   onFinish: (score: number, answers: number[]) => void;
-  user: any;
+  user: { name?: string; username?: string };
 }
 
 const QuizFlow: React.FC<QuizFlowProps> = ({ questions, category, onFinish, user }) => {
@@ -71,7 +71,7 @@ const QuizFlow: React.FC<QuizFlowProps> = ({ questions, category, onFinish, user
         total: questions.length,
         date: new Date().toISOString(),
       };
-      console.log("Posting result payload:", resultPayload);
+  // Removed debug log
       axios
         .post("/api/results", resultPayload)
         .then(() => {

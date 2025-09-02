@@ -702,7 +702,7 @@ function saveHighScore() {
     }
 
     const category = mockCategories.find(cat => cat.id === parseInt(gameState.category));
-    let results = JSON.parse(localStorage.getItem('results')) || [];
+    const results = JSON.parse(localStorage.getItem('results')) || [];
     
     const newResult = {
         name: playerName,
@@ -718,10 +718,10 @@ function saveHighScore() {
     localStorage.setItem('results', JSON.stringify(results));
     sessionStorage.setItem('lastQuizResult', JSON.stringify(newResult));
 
-    let nameInputDiv = document.querySelector('.name-input');
-    let existingMsg = document.getElementById('scoreSavedMsg');
+    const nameInputDiv = document.querySelector('.name-input');
+    const existingMsg = document.getElementById('scoreSavedMsg');
     if (existingMsg) existingMsg.remove();
-    let msg = document.createElement('div');
+    const msg = document.createElement('div');
     msg.id = 'scoreSavedMsg';
     msg.textContent = 'Tulos tallennettu!';
     msg.style.marginTop = '1rem';
@@ -760,7 +760,7 @@ function showMyRanking() {
         r.score === lastResult.score &&
         r.date === lastResult.date
     );
-    let modal = document.getElementById('rankingModal');
+    const modal = document.getElementById('rankingModal');
     if (modal) modal.remove();
     modal = document.createElement('div');
     modal.id = 'rankingModal';

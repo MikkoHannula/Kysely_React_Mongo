@@ -8,18 +8,17 @@ if (!sessionStorage.getItem('isLoggedIn')) {
 }
 
 // Ota data localStorage:sta tai käytä mock dataa
-let questions = JSON.parse(localStorage.getItem('questions')) || mockQuestions;
-let categories = JSON.parse(localStorage.getItem('categories')) || mockCategories;
-let results = JSON.parse(localStorage.getItem('results')) || [];
-let users = JSON.parse(localStorage.getItem('users')) || [
+const questions = JSON.parse(localStorage.getItem('questions')) || mockQuestions;
+const categories = JSON.parse(localStorage.getItem('categories')) || mockCategories;
+const results = JSON.parse(localStorage.getItem('results')) || [];
+const users = JSON.parse(localStorage.getItem('users')) || [
     { id: 1, username: 'Pasi', password: 'Taitaja25!', role: 'admin' }
 ];
 
 // Tuo vanha kysymysdata, jos se on olemassa
 function migrateResultsCategoryId() {
-    let results = JSON.parse(localStorage.getItem('results')) || [];
-    let categories = JSON.parse(localStorage.getItem('categories')) || mockCategories;
-    let updated = false;
+    const results = JSON.parse(localStorage.getItem('results')) || [];
+    const categories = JSON.parse(localStorage.getItem('categories')) || mockCategories;
     results.forEach(result => {
         if (!result.categoryId && result.category) {
             const cat = categories.find(c => c.name === result.category);

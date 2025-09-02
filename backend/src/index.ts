@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 4000;
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kysely')
-  .then(() => console.log('MongoDB connected'))
+  .then(() => {})
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware
@@ -32,10 +32,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use((req, _res, next) => {
-  console.log(`[REQ] ${req.method} ${req.originalUrl}`);
-  next();
-});
+// app.use((req, _res, next) => {
+//   console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+//   next();
+// });
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
@@ -123,17 +123,12 @@ app.get('/api/categories', async (req: express.Request, res: express.Response) =
 // Get single category by ID
 app.get('/api/categories/:id', async (req: express.Request, res: express.Response) => {
   try {
-    console.log('[GET /api/categories/:id] id =', req.params.id, 'type =', typeof req.params.id);
-    // Print all available category IDs for debugging
     const allCats = await Category.find({}, '_id name');
-    console.log('[GET /api/categories/:id] All category IDs:', (allCats as any[]).map(c => c._id.toString()));
     const cat = await Category.findById(req.params.id);
     if (!cat) {
-      console.log('[GET /api/categories/:id] not found');
       res.status(404).json({ message: 'Category not found', triedId: req.params.id, availableIds: (allCats as any[]).map(c => c._id.toString()) });
       return;
     }
-    console.log('[GET /api/categories/:id] found', (cat as any)._id.toString());
     res.json(cat);
   } catch (err) {
     console.error('[GET /api/categories/:id] error', err);
@@ -176,20 +171,17 @@ app.delete('/api/categories/:id', async (req: express.Request, res: express.Resp
 app.get('/api/questions', async (req: express.Request, res: express.Response) => {
   try {
     const { category, count } = req.query as { category?: string; count?: string };
-    let query: any = {};
-    console.log('[QUESTIONS] Query params:', req.query);
+  let query = {};
     if (category) {
       try {
         query.category = new Types.ObjectId(category);
       } catch {
-        console.log('[QUESTIONS] Invalid category id:', category);
+  // Invalid category id
         res.status(400).json({ message: 'Invalid category id' });
         return;
       }
     }
-    console.log('[QUESTIONS] Mongo query:', query);
-    let questions = await Question.find(query).populate('category');
-    console.log('[QUESTIONS] Found', questions.length, 'questions');
+  let questions = await Question.find(query).populate('category');
     if (questions.length === 0) {
       res.json([]);
       return;
@@ -271,7 +263,7 @@ app.get('/api/questions', (req: express.Request, res: express.Response) => {
   Question.find(query).populate('category')
     .then((all) => {
       if (!all || all.length === 0) {
-        console.log('[GET /api/questions] no questions found for query');
+  // No questions found for query
         res.json([]);
         return;
       }
@@ -284,7 +276,7 @@ app.get('/api/questions', (req: express.Request, res: express.Response) => {
         }
         questions = questions.slice(0, n);
       }
-      console.log('[GET /api/questions] returning', questions.length, 'questions');
+  // Returning questions
       res.json(questions);
     })
     .catch(err => {
@@ -379,7 +371,6 @@ app.get('/api/results', async (req: express.Request, res: express.Response) => {
 });
 
 app.post('/api/results', async (req: express.Request, res: express.Response) => {
-  console.log('Received result POST payload:', req.body);
   try {
     const { name, category, score, scoreValue, total, date } = req.body;
     const result = new Result({ name, category, score, scoreValue, total, date });
@@ -452,6 +443,4 @@ app.post('/api/quiz', async (req: express.Request, res: express.Response) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => {});

@@ -1,3 +1,6 @@
+// ResultsTab component for viewing and managing quiz results in the admin panel
+// Displays results with options to filter, sort, and delete
+
 import { useEffect, useState } from "react";
 
 interface Category {

@@ -1,3 +1,6 @@
+// UsersTab component for managing users in the admin panel
+// Handles CRUD operations for users and displays them in a list
+
 import React, { useEffect, useState } from "react";
 
 interface User {
@@ -12,7 +15,7 @@ export default function UsersTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<any>(emptyUser);
+  const [form, setForm] = useState(emptyUser);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {

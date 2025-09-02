@@ -1,3 +1,119 @@
+/* Responsive admin category tabs */
+.admin-category-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .admin-category-tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+/* Responsive ranking controls */
+.ranking-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+.ranking-sort-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.ranking-back-button {
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .ranking-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .ranking-sort-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .ranking-back-button {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+}
+/* Responsive styles for all screens */
+@media (max-width: 900px) {
+  #root, .admin-container {
+    max-width: 100vw;
+    padding: 1rem;
+  }
+  .admin-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 70px;
+    padding: 1rem 0.5rem;
+  }
+  .admin-controls, .admin-nav {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .hero {
+    padding: 1.2rem;
+    max-width: 98vw;
+  }
+}
+
+@media (max-width: 600px) {
+  #root, .admin-container {
+    padding: 0.5rem;
+  }
+  .admin-header {
+    flex-direction: column;
+    gap: 0.3rem;
+    min-height: 50px;
+    padding: 0.5rem 0.2rem;
+    font-size: 1rem;
+  }
+  .main-title {
+    font-size: 1.3rem;
+  }
+  .description {
+    font-size: 1rem;
+  }
+  .hero {
+    padding: 0.7rem;
+    max-width: 100vw;
+  }
+  .results-table, .question-list, .category-item, .user-item {
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    overflow-x: auto;
+  }
+  .results-table th, .results-table td {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.95rem;
+  }
+  .btn-primary, .btn-secondary, .btn-danger {
+    min-width: 80px;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Make tables scrollable on small screens */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+  display: block;
+}
+.results-table th, .results-table td {
+  text-align: left;
+  padding: 0.5rem 1rem;
+  word-break: break-word;
+}
 /* Category and user actions styling */
 .category-actions, .user-actions {
   display: flex;

@@ -12,7 +12,7 @@ export default function LoginPage({ onLogin }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    let res: Response;
+  let res;
     try {
       res = await fetch("/api/login", {
         method: "POST",
@@ -28,7 +28,7 @@ export default function LoginPage({ onLogin }: Props) {
       const user = await res.json();
       onLogin(user);
     } else {
-      let data: any = {};
+  let data: { message?: string } = {};
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         data = await res.json();

@@ -68,7 +68,7 @@ const mockQuestions: Record<string, { question: string; options: string[]; corre
 
 async function main() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kysely');
-  console.log('Connected to MongoDB');
+  // Connected to MongoDB
 
   // Create admin user 'Pasi' with password 'Kysely'
   const User = (await import('../models/User')).default;
@@ -76,17 +76,17 @@ async function main() {
   if (!existing) {
     const hash = await bcrypt.hash('Kysely', 10);
     await User.create({ username: 'Pasi', password: hash, role: 'admin' });
-    console.log('Admin user "Pasi" created');
+  // Admin user "Pasi" created
   } else {
-    console.log('Admin user "Pasi" already exists');
+  // Admin user "Pasi" already exists
   }
 
   // Insert categories and map old id to new _id
-  const catIdMap: Record<number, any> = {};
+  const catIdMap: Record<number, unknown> = {};
   for (const cat of mockCategories) {
     const created = await Category.create({ name: cat.name });
     catIdMap[cat.id] = created._id;
-    console.log(`Inserted category: ${cat.name}`);
+  // Inserted category
   }
 
   // Insert questions
@@ -100,11 +100,11 @@ async function main() {
         options: q.options,
         correctAnswer: q.correctAnswer,
       });
-      console.log(`Inserted question for category ${catId}: ${q.question}`);
+  // Inserted question for category
     }
   }
 
-  console.log('Import complete!');
+  // Import complete!
   await mongoose.disconnect();
 }
 

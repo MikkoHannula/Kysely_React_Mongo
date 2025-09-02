@@ -1,8 +1,11 @@
+// ErrorBoundary component catches rendering errors in child components
+// Displays a fallback UI if an error occurs
+
 import React from "react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
-  error: any;
+  error: unknown;
 }
 
 export class ErrorBoundary extends React.Component<{ children: React.ReactNode }, ErrorBoundaryState> {
@@ -11,11 +14,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: any) {
+  static getDerivedStateFromError(error: unknown) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
+  componentDidCatch(error: unknown, errorInfo: unknown) {
     // You can log error info here if needed
     console.error("ErrorBoundary caught an error:", error, errorInfo);
   }

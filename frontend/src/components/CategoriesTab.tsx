@@ -1,3 +1,6 @@
+// CategoriesTab component for managing quiz categories in the admin panel
+// Handles CRUD operations for categories and displays them in a list
+
 import React, { useEffect, useState } from "react";
 
 interface Category {
@@ -15,7 +18,7 @@ export default function CategoriesTab({ active }: CategoriesTabProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<any>(emptyCategory);
+  const [form, setForm] = useState(emptyCategory);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {

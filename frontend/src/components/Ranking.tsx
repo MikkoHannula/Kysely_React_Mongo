@@ -65,11 +65,15 @@ export default function Ranking({ onBack }: RankingProps) {
   return (
     <div className="ranking-view">
       <h2>Ranking / Tulokset</h2>
-      <div style={{ marginBottom: 16 }}>
-        <button className={sortType === "score" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("score")}>Järjestä pisteiden mukaan</button>
-        <button className={sortType === "date" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("date")}>Järjestä ajan mukaan</button>
-        <button className={sortType === "category" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("category")}>Järjestä kategorian mukaan</button>
-        <button className="btn-secondary" style={{ float: 'right' }} onClick={onBack}>Takaisin</button>
+      <div className="ranking-controls" style={{ marginBottom: 16 }}>
+        <div className="ranking-sort-buttons">
+          <button className={sortType === "score" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("score")}>Järjestä pisteiden mukaan</button>
+          <button className={sortType === "date" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("date")}>Järjestä ajan mukaan</button>
+          <button className={sortType === "category" ? "btn-primary" : "btn-secondary"} onClick={() => setSortType("category")}>Järjestä kategorian mukaan</button>
+        </div>
+        <div className="ranking-back-button">
+          <button className="btn-secondary" onClick={onBack}>Takaisin</button>
+        </div>
       </div>
       <table className="results-table">
         <thead>

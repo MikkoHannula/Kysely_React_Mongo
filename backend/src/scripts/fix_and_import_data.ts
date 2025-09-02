@@ -87,21 +87,21 @@ for (const cat of legacyCategories) {
 
 async function main() {
   await mongoose.connect('mongodb://127.0.0.1:27017/kysely');
-  console.log('Connected to MongoDB');
+  // Connected to MongoDB
 
   // Remove all questions and categories
   await Question.deleteMany({});
   await Category.deleteMany({});
-  console.log('Cleared old questions and categories');
+  // Cleared old questions and categories
 
   // Insert categories
-  const categoryDocs: Record<string, any> = {};
+  const categoryDocs: Record<string, unknown> = {};
   for (const cat of legacyCategories) {
     const doc = new Category({ name: cat.name });
     await doc.save();
     categoryDocs[cat.name] = doc;
   }
-  console.log('Inserted categories');
+  // Inserted categories
 
   // Insert questions with correct category ObjectId
   for (const q of legacyQuestions) {
@@ -118,9 +118,9 @@ async function main() {
     });
     await question.save();
   }
-  console.log('Inserted questions');
+  // Inserted questions
   await mongoose.disconnect();
-  console.log('Done!');
+  // Done!
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

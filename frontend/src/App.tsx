@@ -1,7 +1,29 @@
+// Main App component for Kysely Quiz/Admin application
+// Handles routing between quiz flow, admin panel, login, and results
+// Uses React hooks for state management and data fetching
+
+// AppInner contains all main logic for routing and state
+  // State variables:
+  //   activeTab: which admin tab is active
+  //   user: logged-in user info
+  //   loading: app loading state
+  //   fatalError: unrecoverable error message
+  //   showLogin: whether login page is shown
+  //   quizStartData: quiz start info (name, category, count)
+  //   quizResult: quiz results after completion
+  //   showRanking: whether ranking view is shown
+  //   quizQuestions: loaded quiz questions
+  //   quizCategoryObj: loaded quiz category object
+  //   quizLoading: loading state for quiz questions
+  // Initial user fetch and loading timeout
+  // Fetch quiz questions and category object when quizStartData changes
+  // Handler functions for tab change, logout, login
+  // Main render logic: routes between quiz, results, admin, and landing page
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import AdminHeader from "./components/AdminHeader";
 import QuestionsTab from "./components/QuestionsTab";
+import type { Question, Category } from "./components/QuestionsTab";
 import CategoriesTab from "./components/CategoriesTab";
 import ResultsTab from "./components/ResultsTab";
 import LandingPage from "./components/LandingPage";
@@ -18,36 +40,30 @@ function AppInner() {
   const [showLogin, setShowLogin] = useState(false);
   // Quiz state for landing page (move outside render)
   const [quizStartData, setQuizStartData] = useState<null | { name: string; category: string; count: number }>(null);
-  const [quizResult, setQuizResult] = useState<null | { score: number; total: number; answers: string[]; questions: any[] }>(null);
+  const [quizResult, setQuizResult] = useState<null | { score: number; total: number; answers: string[]; questions: Question[] }>(null);
   // Ranking view toggle must be declared unconditionally to keep hook order stable
   const [showRanking, setShowRanking] = useState(false);
   // Quiz question fetching related hooks MUST be before any early returns
-  const [quizQuestions, setQuizQuestions] = useState<any[] | null>(null);
-  const [quizCategoryObj, setQuizCategoryObj] = useState<any | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<Question[] | null>(null);
+  const [quizCategoryObj, setQuizCategoryObj] = useState<Category | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
 
   useEffect(() => {
-    let didTimeout = false;
     const timeout = setTimeout(() => {
-      didTimeout = true;
       setFatalError('Sovellus ei latautunut ajoissa. (App did not load in time)');
       setLoading(false);
     }, 5000);
     fetch("/api/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!didTimeout) {
-          if (data) setUser(data);
-          setLoading(false);
-          clearTimeout(timeout);
-        }
+        if (data) setUser(data);
+        setLoading(false);
+        clearTimeout(timeout);
       })
       .catch((e) => {
-        if (!didTimeout) {
-          setFatalError('Virhe ladattaessa käyttäjätietoja: ' + (e?.message || e));
-          setLoading(false);
-          clearTimeout(timeout);
-        }
+        setFatalError('Virhe ladattaessa käyttäjätietoja: ' + (e?.message || e));
+        setLoading(false);
+        clearTimeout(timeout);
       });
     return () => clearTimeout(timeout);
   }, []);

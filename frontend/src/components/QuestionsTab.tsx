@@ -1,11 +1,18 @@
+// QuestionsTab component for managing and displaying quiz questions in the admin panel
+// Handles CRUD operations for questions and displays them grouped by category
+
+// Category interface represents a quiz category
+// Question interface represents a quiz question
+// emptyQuestion is used to reset the question form
+// Main QuestionsTab component
 import React, { useEffect, useState } from "react";
 
-interface Category {
+export interface Category {
   _id: string;
   name: string;
 }
 
-interface Question {
+export interface Question {
   _id: string;
   category: Category | string;
   question: string;
@@ -30,7 +37,7 @@ export default function QuestionsTab({ active }: QuestionsTabProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<any>(emptyQuestion);
+  const [form, setForm] = useState(emptyQuestion);
   const [editingId, setEditingId] = useState<string | null>(null);
 
 
