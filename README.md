@@ -23,14 +23,10 @@ This project is a modernized version of the Taitaja25_Naytto quiz/admin app, reb
 ### 3. Environment
 - Backend expects a `.env` file in `backend/` with at least:
   - `MONGODB_URI=mongodb://localhost:27017/kysely`
-  - `SESSION_SECRET=your_secret_here`
 
 ## Features
 - Admin and user interfaces
 - Quiz management, categories, users, results
-- Responsive, modern UI
+- Responsive UI
 - Session-based login
 
----
-
-For more details, see code comments and documentation.
