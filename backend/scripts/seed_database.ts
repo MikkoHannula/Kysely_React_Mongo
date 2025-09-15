@@ -24,36 +24,36 @@ async function seed() {
   const questions = [
     ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[0]._id,
-      text: `Tietotekniikka kysymys ${i + 1}`,
+      question: `Tietotekniikka kysymys ${i + 1}`,
       options: [
         `Vaihtoehto A (${i + 1})`,
         `Vaihtoehto B (${i + 1})`,
         `Vaihtoehto C (${i + 1})`,
         `Vaihtoehto D (${i + 1})`
       ],
-      correctOption: i % 4
+      correctAnswer: i % 4
     })),
     ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[1]._id,
-      text: `Historia kysymys ${i + 1}`,
+      question: `Historia kysymys ${i + 1}`,
       options: [
         `Vaihtoehto A (${i + 1})`,
         `Vaihtoehto B (${i + 1})`,
         `Vaihtoehto C (${i + 1})`,
         `Vaihtoehto D (${i + 1})`
       ],
-      correctOption: (i + 1) % 4
+      correctAnswer: (i + 1) % 4
     })),
     ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[2]._id,
-      text: `Matematiikka kysymys ${i + 1}`,
+      question: `Matematiikka kysymys ${i + 1}`,
       options: [
         `Vaihtoehto A (${i + 1})`,
         `Vaihtoehto B (${i + 1})`,
         `Vaihtoehto C (${i + 1})`,
         `Vaihtoehto D (${i + 1})`
       ],
-      correctOption: (i + 2) % 4
+      correctAnswer: (i + 2) % 4
     })),
   ];
   await Question.deleteMany({});
