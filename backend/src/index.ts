@@ -171,7 +171,7 @@ app.delete('/api/categories/:id', async (req: express.Request, res: express.Resp
 app.get('/api/questions', async (req: express.Request, res: express.Response) => {
   try {
     const { category, count } = req.query as { category?: string; count?: string };
-  let query = {};
+  let query: Record<string, any> = {};
     if (category) {
       try {
         query.category = new Types.ObjectId(category);

@@ -13,32 +13,48 @@ async function seed() {
   // Example categories
   const categories = [
     { name: 'Tietotekniikka' },
-    { name: 'Yleissivistys' },
+    { name: 'Historia' },
     { name: 'Matematiikka' }
   ];
   await Category.deleteMany({});
   const catDocs = await Category.insertMany(categories);
 
-  // Example questions
+
+  // Example questions for each category
   const questions = [
-    {
+    ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[0]._id,
-      question: 'Mikä seuraavista on varmuuskopiointiin tarkoitettu tallennusväline?',
-      options: ['CPU', 'NAS', 'RAM', 'GPU'],
-      correctAnswer: 1
-    },
-    {
+      text: `Tietotekniikka kysymys ${i + 1}`,
+      options: [
+        `Vaihtoehto A (${i + 1})`,
+        `Vaihtoehto B (${i + 1})`,
+        `Vaihtoehto C (${i + 1})`,
+        `Vaihtoehto D (${i + 1})`
+      ],
+      correctOption: i % 4
+    })),
+    ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[1]._id,
-      question: 'Kuka oli Suomen ensimmäinen presidentti?',
-      options: ['Urho Kekkonen', 'K. J. Ståhlberg', 'Sauli Niinistö', 'Tarja Halonen'],
-      correctAnswer: 1
-    },
-    {
+      text: `Historia kysymys ${i + 1}`,
+      options: [
+        `Vaihtoehto A (${i + 1})`,
+        `Vaihtoehto B (${i + 1})`,
+        `Vaihtoehto C (${i + 1})`,
+        `Vaihtoehto D (${i + 1})`
+      ],
+      correctOption: (i + 1) % 4
+    })),
+    ...Array.from({ length: 15 }, (_, i) => ({
       category: catDocs[2]._id,
-      question: 'Mikä on piin (π) likiarvo kahden desimaalin tarkkuudella?',
-      options: ['3.12', '3.14', '3.16', '3.18'],
-      correctAnswer: 1
-    }
+      text: `Matematiikka kysymys ${i + 1}`,
+      options: [
+        `Vaihtoehto A (${i + 1})`,
+        `Vaihtoehto B (${i + 1})`,
+        `Vaihtoehto C (${i + 1})`,
+        `Vaihtoehto D (${i + 1})`
+      ],
+      correctOption: (i + 2) % 4
+    })),
   ];
   await Question.deleteMany({});
   await Question.insertMany(questions);
