@@ -1,3 +1,21 @@
+#
+## Seeding the Database & Creating Admin User
+
+To populate your database with real test questions and categories, run this command from the project root:
+
+```
+npx ts-node backend/scripts/seed_database.ts
+```
+
+This will remove all existing categories and questions, then add three categories (Tietotekniikka, Historia, Matematiikka) with 15 real questions each.
+
+To create the admin user "Pasi" with password "mipeha", run:
+
+```
+npx ts-node backend/scripts/create_admin_pasi.ts
+```
+
+This will add the user to your database if it does not already exist. If the user already exists, the script will not overwrite the password.
 # Kysely React + MongoDB Project
 
 This project is a modernized version of the Taitaja25_Naytto quiz/admin app, rebuilt with:
